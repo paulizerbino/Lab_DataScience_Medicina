@@ -1,7 +1,7 @@
 # %%
 import os
 os.getcwd()  # Devuelve el directorio de trabajo actual
-os.chdir("/Users/paulizerbino/Documents/GitHub/Lab_DataScience_Medicina")
+#os.chdir("/Users/paulizerbino/Documents/GitHub/Lab_DataScience_Medicina")
 
 from pathlib import Path
 import pandas as pd
