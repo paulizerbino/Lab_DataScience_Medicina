@@ -1,3 +1,8 @@
+ENFERMEDADES CARDIOVASCULARES
+
+Las enfermedades cardiovasculares (ECV) son un conjunto de trastornos que afectan al corazón y a los vasos sanguíneos. Dentro de ellas se encuentran, por ejemplo, la cardiopatía coronaria, los accidentes cerebrovasculares y la enfermedad arterial periférica. En nuestro trabajo no nos enfocaremos en una enfermedad específica, sino en las enfermedades cardiovasculares de forma general, ya que el dataset que vamos a usar indica unicamente si el paciente presenta o no una ECV, sin especificar cuál de ellas padece. 
+
+
 PROBLEMA A RESOLVER
 
 Una de las principales causas de muerte a nivel mundial son las enfermedades cardiovasculares. Gran parte de los factores de riesgo asociados a la enfermedad (presión arterial, colesterol, glucosa, adicciones, etc), son medibles, y muchas veces, prevenibles. Sin embargo, la dificultad se encuentra en detectar qué pacientes presentan mayores riesgos de padecerla, lo cual no es fácil de hacer desde una sola inspección clínica ni con grandes volúmenes de datos.
