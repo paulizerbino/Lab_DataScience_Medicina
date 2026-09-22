@@ -1,0 +1,142 @@
+import os
+os.getcwd()  # Devuelve el directorio de trabajo actual
+#os.chdir("/Users/paulizerbino/Documents/GitHub/Lab_DataScience_Medicina")
+
+from pathlib import Path
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+
+
+
+# 1. Definir la ruta raíz del proyecto o del directorio de trabajo actual
+BASE_DIR = Path.cwd()
+
+
+
+# 2. Construir la ruta relativa de forma segura utilizando el operador /
+# Estructura esperada: tu_proyecto/data/raw/datos.csv
+archivo = "cardio_train.csv"
+ruta_csv = BASE_DIR / "Datos" / archivo
+
+
+
+# 3. Verificar que el archivo realmente existe antes de cargarlo
+if not ruta_csv.exists():
+    raise FileNotFoundError(f"No se encontró el archivo en: {ruta_csv}")
+
+
+
+# 4. Cargar el archivo CSV
+datos_medicos = pd.read_csv(ruta_csv, sep=";")
+
+
+
+# 5. Inspección inicial de los datos
+print(f"--- Archivo cargado exitosamente desde: {ruta_csv.name} ---")
+print(datos_medicos.info())
+print("\nPrimeras 5 filas:")
+print(datos_medicos.head())
+
+
+
+# 6. Limpieza de datos
+print("Cantidad total de filas:", datos_medicos.shape[0])
+print("Descripcion de columnas:", datos_medicos.describe(include = "all"))
+print(datos_medicos["id"].unique())
+
+datos_limpios = datos_medicos.copy()
+print(datos_limpios.isna().sum()) # No hay valores faltantes
+print(datos_limpios.duplicated().sum()) # No hay duplicados
+
+
+
+# 7. Transformacion de datos
+print(datos_limpios["age"].dtype) # int64
+
+datos_limpios["age_number"] = (datos_limpios["age"]/365.25).astype(int) # 365.25 para compensar años bisiestos
+print(datos_limpios[["age","age_number"]].head())
+print("\nRango de edad en años:", datos_limpios["age_number"].min(), "-", datos_limpios["age_number"].max()) # Conocer rango de edad: 29 - 64
+
+# Agrupacion presion sistolica y diastlica
+print("Descripcion de presiones:", datos_limpios[["ap_hi","ap_lo"]].describe()) # Se detectaron outliers: min -150, max 16020
+
+# a. Hay casos con presion diastolica > sistolica, lo cual es imposible
+# b. Hay datos en ambas columnas medicamente imposibles (datos posibles: 60 < sistolica < 250, 40 < diastolica < 200)
+
+# Eliminar casos donde ap_lo > ap_hi (Parte a)
+filas_antes = datos_limpios.shape[0]
+datos_limpios = datos_limpios[(datos_limpios["ap_lo"] <= datos_limpios["ap_hi"])]
+print(f"Filas antes: {filas_antes} | Filas después: {datos_limpios.shape[0]} | Eliminadas: {filas_antes - datos_limpios.shape[0]}")
+
+# Eliminar máximos y mínimos medicamente imposibles (Parte b)
+LIMITE_AP_HI = (60, 250)
+LIMITE_AP_LO = (40, 200)
+
+filas_antes = datos_limpios.shape[0]
+
+datos_limpios = datos_limpios[
+    datos_limpios["ap_hi"].between(*LIMITE_AP_HI) &
+    datos_limpios["ap_lo"].between(*LIMITE_AP_LO)
+]
+
+print(f"Filas antes: {filas_antes} | Filas después: {datos_limpios.shape[0]} | Eliminadas: {filas_antes - datos_limpios.shape[0]}")
+print("Descripcion de presiones:", datos_limpios[["ap_hi","ap_lo"]].describe()) # Se corrigieron problemas. 
+
+print("Descripcion de dataset limpio:", datos_limpios.describe(include = "all")) # Count final: 68674
+
+# Categorizar la presión arterial según sistólica (ap_hi) y diastólica (ap_lo) => clasificacion imagen "clasificacion-presion-arterial"
+condiciones = [
+    (datos_limpios["ap_hi"] > 180) | (datos_limpios["ap_lo"] > 120),                          # Crisis de hipertensión
+    (datos_limpios["ap_hi"] >= 140) | (datos_limpios["ap_lo"] >= 90),                          # Hipertensión Nivel 2
+    (datos_limpios["ap_hi"].between(130, 139)) | (datos_limpios["ap_lo"].between(80, 89)),     # Hipertensión Nivel 1
+    (datos_limpios["ap_hi"].between(120, 129)) & (datos_limpios["ap_lo"] < 80),                # Elevada
+    (datos_limpios["ap_hi"].between(80, 120)) & (datos_limpios["ap_lo"].between(60, 80)),      # Normal
+    (datos_limpios["ap_hi"] < 80) | (datos_limpios["ap_lo"] < 60),                             # Hipotensión
+]
+
+valores = [6, 5, 4, 3, 2, 1]
+
+datos_limpios["categoria_presion"] = np.select(condiciones, valores, default=np.nan) 
+# np.select toma la PRIMERA condición que se cumpla, por eso el orden de más grave a menos grave
+
+print(datos_limpios["categoria_presion"].value_counts(dropna=False))
+print(datos_limpios["cardio"].value_counts(dropna=False))
+
+
+
+# 8. Generacion de graficos
+# Variables numéricas relevantes (usamos age_number en vez de age en días)
+columnas_correlacion = [
+    "age_number", "gender", "height", "weight",
+    "ap_hi", "ap_lo", "cholesterol", "gluc",
+    "smoke", "alco", "active", "categoria_presion", "cardio"
+]
+
+matriz_corr = datos_limpios[columnas_correlacion].corr()
+
+fig, ax = plt.subplots(figsize=(10, 8))
+sns.heatmap(
+    matriz_corr,
+    annot=True, fmt=".2f",
+    cmap="coolwarm", vmin=-1, vmax=1, center=0,
+    square=True, linewidths=0.5, ax=ax
+)
+ax.set_title("Matriz de correlación entre variables clínicas y enfermedad cardiovascular")
+plt.tight_layout()
+plt.show()
+
+# Heatmap relacionado con cardio
+corr_con_cardio = matriz_corr["cardio"].drop("cardio").sort_values(key=abs, ascending=False)
+print(corr_con_cardio)
+
+fig, ax = plt.subplots(figsize=(4, 6))
+sns.heatmap(
+    corr_con_cardio.to_frame(),
+    annot=True, fmt=".2f",
+    cmap="coolwarm", vmin=-1, vmax=1, center=0, ax=ax
+)
+ax.set_title("Correlación de cada variable con 'cardio'")
+plt.tight_layout()
+plt.show()

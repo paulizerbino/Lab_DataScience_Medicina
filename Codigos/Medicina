@@ -1,0 +1,63 @@
+# %%
+import os
+os.getcwd()  # Devuelve el directorio de trabajo actual
+#os.chdir("/Users/paulizerbino/Documents/GitHub/Lab_DataScience_Medicina")
+
+from pathlib import Path
+import pandas as pd
+
+# 1. Definir la ruta raíz del proyecto o del directorio de trabajo actual
+BASE_DIR = Path.cwd()
+
+# 2. Construir la ruta relativa de forma segura utilizando el operador /
+# Estructura esperada: tu_proyecto/data/raw/datos.csv
+archivo = "cardio_train.csv"
+ruta_csv = BASE_DIR / "Datos" / archivo
+
+# 3. Verificar que el archivo realmente existe antes de cargarlo
+if not ruta_csv.exists():
+    raise FileNotFoundError(f"No se encontró el archivo en: {ruta_csv}")
+
+# %%
+# 4. Cargar el archivo CSV
+datos_medicos = pd.read_csv(ruta_csv, sep=";")
+
+# 5. Inspección inicial de los datos
+print(f"--- Archivo cargado exitosamente desde: {ruta_csv.name} ---")
+print(datos_medicos.info())
+print("\nPrimeras 5 filas:")
+print(datos_medicos.head())
+
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.plot(datos_medicos["height"], datos_medicos["weight"],
+color="blue", linewidth=2) # línea
+#ax.scatter(datos_medicos["height"], datos_medicos["weight"], color="red", s=60, zorder=3) # puntos
+ax.set(title="Comparación de altura y peso de los pacientes",
+xlabel="Altura (cm)", ylabel="Peso (kg)")
+ax.grid(alpha=0.3)
+
+for lado in ("top", "right"):
+    ax.spines[lado].set_visible(False)
+
+plt.tight_layout()
+plt.show()
+
+# Tabla de proporciones: % con riesgo cardio, por grupo de fumador
+tabla = pd.crosstab(datos_medicos["smoke"], datos_medicos["cardio"], normalize="index") * 100
+
+fig, ax = plt.subplots(figsize=(8, 5))
+tabla.plot(kind="bar", stacked=True, color=["#4C72B0", "#D85A30"], ax=ax)
+
+ax.set(title="Riesgo cardiovascular según tabaquismo",
+       xlabel="Fumador (0=No, 1=Sí)", ylabel="Porcentaje de pacientes (%)")
+ax.set_xticklabels(["No fumador", "Fumador"], rotation=0)
+ax.legend(["Sin riesgo cardio", "Con riesgo cardio"], title="Riesgo")
+ax.grid(alpha=0.3, axis="y")
+
+for lado in ("top", "right"):
+    ax.spines[lado].set_visible(False)
+
+plt.tight_layout()
+plt.show()
