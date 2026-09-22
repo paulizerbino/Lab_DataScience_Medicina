@@ -25,7 +25,9 @@ Para analizar este problema y alcanzar nuestros objetivos, elegimos un dataset d
 Cada paciente está identificado por un número único, junto con 11 características que lo describen, además de la variable objetivo. Estas variables se pueden agrupar según su tipo de dato:
 1. Números enteros (INT): edad (en días), altura (en cm), presión arterial sistólica y presión arterial diastólica. 
 2. Decimales (FLOAT): peso (en kg). 
-3. Binarios (0/1): fumar, consumo de alcohol, actividad física y la característica objetivo, donde 1 (indica que la condición aplica) y 0 (que no aplica). 
-4. Códigos categóricos: género, colesterol y glucosa. En género: 1 (mujer), 2 (hombre). Mientras que en colesterol y glucosa: 1 (normal), 2 (por encima de lo normal), 3 (muy por encima de lo normal). 
+3. Binarios: 
+- 0/1: fumar, consumo de alcohol, actividad física y la característica objetivo, donde 1 (indica que la condición aplica) y 0 (que no aplica).
+- Género: 1 (mujer) y 2 (hombre).
+5. Códigos categóricos (colesterol y glucosa): 1 (normal), 2 (por encima de lo normal), 3 (muy por encima de lo normal). 
 
-Link-Kaggle: https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset?utm_source=chatgpt.com 
+Link-Kaggle: https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset
