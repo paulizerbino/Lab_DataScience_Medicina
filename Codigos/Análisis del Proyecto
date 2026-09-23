@@ -190,20 +190,16 @@ print(datos_limpios["presion_pulso"].value_counts(dropna=False))
 
 # Categorizar el IMC según la OMS => clasificacion imagen "indice_masa_corporal"
 condiciones_imc = [
-    (datos_limpios["imc"] < 18.5),                                                             # Bajo peso
-    (datos_limpios["imc"].between(18.5, 24.9)),                                                # Peso normal
-    (datos_limpios["imc"].between(25, 29.9)),                                                  # Sobrepeso
-    (datos_limpios["imc"].between(30, 34.9)),                                                  # Obesidad grado I
-    (datos_limpios["imc"].between(35, 39.9)),                                                  # Obesidad grado II
-    (datos_limpios["imc"] >= 40)                                                               # Obesidad grado III
+    datos_limpios["imc"] < 18.5,                                  # Bajo peso
+    (datos_limpios["imc"] >= 18.5) & (datos_limpios["imc"] < 25),  # Normal
+    (datos_limpios["imc"] >= 25)   & (datos_limpios["imc"] < 30),  # Sobrepeso
+    (datos_limpios["imc"] >= 30)   & (datos_limpios["imc"] < 35),  # Obesidad I
+    (datos_limpios["imc"] >= 35)   & (datos_limpios["imc"] < 40),  # Obesidad II
+    datos_limpios["imc"] >= 40,                                   # Obesidad III
 ]
 
 valores_imc = [1, 2, 3, 4, 5, 6]
-
 datos_limpios["categoria_imc"] = np.select(condiciones_imc, valores_imc, default=np.nan)
-<<<<<<< Updated upstream
-print(datos_limpios["categoria_imc"].value_counts(dropna=False)) # Problema NaN
-=======
 print(datos_limpios["categoria_imc"].value_counts(dropna=False).sort_index())
 
 # Tomamos una muestra para que el gráfico sea rápido (el resultado visual es prácticamente igual)
@@ -261,4 +257,4 @@ for lado in ax.spines.values():
 
 plt.tight_layout()
 plt.show()
->>>>>>> Stashed changes
+
