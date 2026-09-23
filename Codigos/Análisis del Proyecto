@@ -227,8 +227,6 @@ for lado in ("top", "right"):
 plt.tight_layout()
 plt.show()
 
-# %%
-import numpy as np
 
 x_var, y_var = "ap_hi", "ap_lo"   # <- cambiá estas dos si querés otro par
 
@@ -259,3 +257,4 @@ for lado in ax.spines.values():
 
 plt.tight_layout()
 plt.show()
+
