@@ -1,3 +1,8 @@
+ENFERMEDADES CARDIOVASCULARES
+
+Las enfermedades cardiovasculares (ECV) son un conjunto de trastornos que afectan al corazón y a los vasos sanguíneos. Dentro de ellas se encuentran, por ejemplo, la cardiopatía coronaria, los accidentes cerebrovasculares y la enfermedad arterial periférica. En nuestro trabajo no nos enfocaremos en una enfermedad específica, sino en las enfermedades cardiovasculares de forma general, ya que el dataset que vamos a usar indica unicamente si el paciente presenta o no una ECV, sin especificar cuál de ellas padece. 
+
+
 PROBLEMA A RESOLVER
 
 Una de las principales causas de muerte a nivel mundial son las enfermedades cardiovasculares. Gran parte de los factores de riesgo asociados a la enfermedad (presión arterial, colesterol, glucosa, adicciones, etc), son medibles, y muchas veces, prevenibles. Sin embargo, la dificultad se encuentra en detectar qué pacientes presentan mayores riesgos de padecerla, lo cual no es fácil de hacer desde una sola inspección clínica ni con grandes volúmenes de datos.
@@ -28,6 +33,6 @@ Cada paciente está identificado por un número único, junto con 11 caracterís
 3. Binarios: 
 - 0/1: fumar, consumo de alcohol, actividad física y la característica objetivo, donde 1 (indica que la condición aplica) y 0 (que no aplica).
 - Género: 1 (mujer) y 2 (hombre).
-5. Códigos categóricos (colesterol y glucosa): 1 (normal), 2 (por encima de lo normal), 3 (muy por encima de lo normal). 
+4. Códigos categóricos (colesterol y glucosa): 1 (normal), 2 (por encima de lo normal), 3 (muy por encima de lo normal). 
 
 Link-Kaggle: https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset
