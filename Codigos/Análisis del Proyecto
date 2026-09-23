@@ -50,6 +50,19 @@ datos_limpios = datos_medicos.copy()
 print(datos_limpios.isna().sum()) # No hay valores faltantes
 print(datos_limpios.duplicated().sum()) # No hay duplicados
 
+# Detección de altura y peso fuera de rango medico
+LIMITE_ALTURA = (120, 220)   # cm
+LIMITE_PESO = (30, 200)      # kg
+
+filas_antes = datos_limpios.shape[0]
+
+datos_limpios = datos_limpios[
+    datos_limpios["height"].between(*LIMITE_ALTURA) &
+    datos_limpios["weight"].between(*LIMITE_PESO)
+]
+
+print(f"Filas antes: {filas_antes} | Filas después: {datos_limpios.shape[0]} | Eliminadas: {filas_antes - datos_limpios.shape[0]}")
+
 
 
 # 7. Transformacion de datos
@@ -140,3 +153,52 @@ sns.heatmap(
 ax.set_title("Correlación de cada variable con 'cardio'")
 plt.tight_layout()
 plt.show()
+
+
+
+# 9. Crear nuevas variables para encontrar correlaciones mas fuertes
+datos_limpios["imc"] = datos_limpios["weight"] / (datos_limpios["height"]/100)**2  # Índice de Masa Corporal 
+datos_limpios["presion_pulso"] = datos_limpios["ap_hi"] - datos_limpios["ap_lo"]  
+datos_limpios["habitos_riesgo"] = datos_limpios["smoke"] + datos_limpios["alco"] + (1 - datos_limpios["active"])  # 0: sin habitos de riesgo, 1: un habito, 2: dos habitos, 3: tres habitos
+datos_limpios["sindrome_metabolico"] = (datos_limpios["cholesterol"] + datos_limpios["gluc"])  
+
+# Heatmap de correlación con nuevas variables 
+columnas_correlacion_nueva = [
+    "imc", "presion_pulso", "habitos_riesgo", "sindrome_metabolico", "cardio"
+]
+
+matriz_corr2 = datos_limpios[columnas_correlacion_nueva].corr()
+
+corr_con_cardio = matriz_corr2["cardio"].drop("cardio").sort_values(key=abs, ascending=False)
+print(corr_con_cardio)
+
+fig, ax = plt.subplots(figsize=(4, 6))
+sns.heatmap(
+    corr_con_cardio.to_frame(),
+    annot=True, fmt=".2f",
+    cmap="coolwarm", vmin=-1, vmax=1, center=0, ax=ax
+)
+ax.set_title("Correlación de cada variable nueva con 'cardio'")
+plt.tight_layout()
+plt.show()
+
+# Nos fijamos los valores de las nuevas variables creadas 
+print(datos_limpios["imc"].value_counts(dropna=False))
+print(datos_limpios["habitos_riesgo"].value_counts(dropna=False))
+print(datos_limpios["sindrome_metabolico"].value_counts(dropna=False))
+print(datos_limpios["presion_pulso"].value_counts(dropna=False))
+
+# Categorizar el IMC según la OMS => clasificacion imagen "indice_masa_corporal"
+condiciones_imc = [
+    (datos_limpios["imc"] < 18.5),                                                             # Bajo peso
+    (datos_limpios["imc"].between(18.5, 24.9)),                                                # Peso normal
+    (datos_limpios["imc"].between(25, 29.9)),                                                  # Sobrepeso
+    (datos_limpios["imc"].between(30, 34.9)),                                                  # Obesidad grado I
+    (datos_limpios["imc"].between(35, 39.9)),                                                  # Obesidad grado II
+    (datos_limpios["imc"] >= 40)                                                               # Obesidad grado III
+]
+
+valores_imc = [1, 2, 3, 4, 5, 6]
+
+datos_limpios["categoria_imc"] = np.select(condiciones_imc, valores_imc, default=np.nan)
+print(datos_limpios["categoria_imc"].value_counts(dropna=False)) # Problema NaN
