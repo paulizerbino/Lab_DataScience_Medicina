@@ -201,4 +201,64 @@ condiciones_imc = [
 valores_imc = [1, 2, 3, 4, 5, 6]
 
 datos_limpios["categoria_imc"] = np.select(condiciones_imc, valores_imc, default=np.nan)
+<<<<<<< Updated upstream
 print(datos_limpios["categoria_imc"].value_counts(dropna=False)) # Problema NaN
+=======
+print(datos_limpios["categoria_imc"].value_counts(dropna=False).sort_index())
+
+# Tomamos una muestra para que el gráfico sea rápido (el resultado visual es prácticamente igual)
+muestra = datos_limpios.sample(n=5000, random_state=42)
+
+fig, ax = plt.subplots(figsize=(8, 6))
+
+sns.regplot(
+    data=muestra,
+    x="ap_hi", y="cardio",
+    y_jitter=0.05,
+    scatter_kws={"alpha": 0.1, "s": 15, "color": "#4C72B0"},
+    line_kws={"color": "#D85A30", "linewidth": 2},
+    logistic=True,
+    ci=None
+)
+
+ax.set(title="Relación entre presión sistólica y enfermedad cardiovascular",
+       xlabel="Presión sistólica (ap_hi)", ylabel="Cardio (0 = No, 1 = Sí)")
+ax.grid(alpha=0.3)
+
+for lado in ("top", "right"):
+    ax.spines[lado].set_visible(False)
+
+plt.tight_layout()
+plt.show()
+
+
+x_var, y_var = "ap_hi", "ap_lo"   # <- cambiá estas dos si querés otro par
+
+# Tomamos una muestra para que el gráfico no se sature de puntos
+muestra = datos_limpios.sample(n=300, random_state=42)
+
+# Calculamos la correlación sobre TODOS los datos (no solo la muestra), para que sea representativa
+correlacion = datos_limpios[x_var].corr(datos_limpios[y_var])
+
+# Ajustamos la recta de regresión lineal (pendiente y ordenada al origen)
+pendiente, ordenada = np.polyfit(datos_limpios[x_var], datos_limpios[y_var], 1)
+
+fig, ax = plt.subplots(figsize=(7, 6))
+
+ax.scatter(muestra[x_var], muestra[y_var], color="#A8D0E6", s=40, alpha=0.8, edgecolors="none")
+
+x_linea = np.linspace(datos_limpios[x_var].min(), datos_limpios[x_var].max(), 100)
+ax.plot(x_linea, pendiente * x_linea + ordenada, color="#C0392B", linewidth=2.5)
+
+ax.text(0.05, 0.95, f"Correlación: {correlacion:.2f}",
+        transform=ax.transAxes, fontsize=12, verticalalignment="top")
+
+ax.set(xlabel=x_var, ylabel=y_var)
+
+# Estilo "caja completa" como en la imagen (a diferencia de los gráficos anteriores, acá SÍ dejamos los 4 bordes)
+for lado in ax.spines.values():
+    lado.set_visible(True)
+
+plt.tight_layout()
+plt.show()
+>>>>>>> Stashed changes
