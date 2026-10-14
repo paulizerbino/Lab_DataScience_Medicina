@@ -25,12 +25,12 @@ de memoria al final.
 
 ## Método de análisis
 
-| # | Fecha | Decisión | Alternativa descartada | El por que de la decision | Efecto esperado en el resultado |
-|---|-------|----------|------------------------|---------|-------------------------------|
-| 10 | 14-10-2026 | Usar correlación de **Spearman** en lugar de Pearson | Seguir con Pearson | Indicación de la profe. Pearson solo mide relaciones lineales entre variables numéricas; Spearman trabaja por rangos y sirve para variables ordinales (colesterol, glucosa, categorías) | Los valores cambian poco (ap_hi: 0,43 → 0,45) pero el método es adecuado para el tipo de datos |
-| 11 | 14-10-2026 | Comparar variables continuas entre pacientes con y sin ECV con **Mann-Whitney U** | t-test de Student | Las variables no son normales (presiones concentradas en valores redondos como 120 o 80) y Mann-Whitney no asume normalidad | Comparación válida; medianas por grupo fáciles de interpretar |
-| 12 | 14-10-2026 | Medir variables categóricas con **chi-cuadrado + V de Cramér** y mostrar % de ECV por categoría | Solo correlaciones o solo el p-valor | Permite ver relaciones no lineales, como la curva en J de la presión (hipotensión 28 % vs. normal 22 % de ECV) | Ranking comparable entre variables categóricas |
-| 13 | 14-10-2026 | Interpretar **tamaños de efecto** (V de Cramér, rango-biserial) y no los p-valores | Decidir por p < 0,05 | Con 68.618 filas casi cualquier diferencia da significativa, aunque sea irrelevante | Evita concluir que variables como género o alcohol "importan" |
-| 14 | 14-10-2026 | Mantener `smoke` y estratificarla por edad para entender su relación negativa con ECV | Eliminarla o "corregirla" | Que fumar parezca proteger va contra la evidencia médica. Se probó si lo explicaban el género o la edad y no alcanzan | Se reporta como limitación del dataset: dato auto-reportado, posible causalidad inversa y no se mide cuánto se fuma |
-| 15 | 14-10-2026 | Usar **información mutua** para el ranking final de variables | Ordenar solo por correlación | Capta relaciones no lineales y no monótonas; sirve para elegir las variables del modelo | Top 5: sistólica, categoría de presión, diastólica, presión de pulso, edad |
-| 16 | 14-10-2026 | Usar muestras aleatorias (5.000 y 300 filas, `random_state = 42`) solo para dibujar los gráficos de dispersión; las correlaciones se calculan con todos los datos | Graficar las 68.618 filas | Con todas las filas los puntos se superponen y el gráfico es ilegible; la semilla fija lo hace reproducible | Solo afecta la visualización, no los resultados numéricos |
+| # | Fecha | Decisión | Alternativa descartada | Por qué | Efecto en el resultado |
+|---|-------|----------|------------------------|---------|------------------------|
+| 10 | 14-10-2026 | Analizar cada variable con gráficos de barras del % de enfermos por grupo | Otros tests | Es más simple, visual y fácil de explicar | Se ve qué variables aumentan el riesgo |
+| 11 | 14-10-2026 | Mostrar hábitos y género juntos en un solo gráfico | Un gráfico por variable, o no mostrarlos | El objetivo pide analizar el estilo de vida, aunque casi no influya | Todos quedan entre 47 % y 53 %: los hábitos no sirven para predecir |
+| 12 | 14-10-2026 | Medir la correlación con el % de enfermos de cada grupo | Quedarse solo con la correlación del heatmap | Como `cardio` es 0 o 1, el heatmap subestima la relación | Las correlaciones pasan de 0,2–0,4 a más de 0,9 |
+| 13 | 14-10-2026 | Comparar sanos y enfermos con boxplots | Comparar solo promedios | Mejor visualmente | Se ve que 120 mmHg funciona como limite entre sanos y enfermos |
+| 14 | 14-10-2026 | Sumar curvas de distribución de presión, edad e IMC | Quedarse solo con los boxplots | Muestran la forma completa de cada grupo | Se ve el pico de los sanos en 120 mmHg y cuánto se superponen los grupos |
+| 15 | 14-10-2026 | Contar cuántos factores de riesgo tiene cada paciente (presión alta, colesterol alto, 55+ años, obesidad) | No combinar variables | Es la forma más simple de ver si el riesgo se acumula | El % de enfermos va de 21 % (ningún factor) a 82 % (los cuatro) |
+| 16 | 14-10-2026 | Hacer un mapa de riesgo cruzando edad y presión | Un heatmap de correlación común | Muestra cómo se combinan dos factores | El riesgo va de 8 % a 89 % |
