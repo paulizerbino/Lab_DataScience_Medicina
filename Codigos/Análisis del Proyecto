@@ -44,11 +44,11 @@ print(datos_medicos.head())
 # 6. Limpieza de datos
 print("Cantidad total de filas:", datos_medicos.shape[0])
 print("Descripcion de columnas:", datos_medicos.describe(include = "all"))
-print(datos_medicos["id"].unique())
+print("Valores únicos en 'id':", datos_medicos["id"].unique())
 
 datos_limpios = datos_medicos.copy()
-print(datos_limpios.isna().sum()) # No hay valores faltantes
-print(datos_limpios.duplicated().sum()) # No hay duplicados
+print("Cantidad de datos faltantes:", datos_limpios.isna().sum()) # No hay valores faltantes
+print("Cantidad de filas duplicadas:", datos_limpios.duplicated().sum()) # No hay duplicados
 
 # Detección de altura y peso fuera de rango medico
 LIMITE_ALTURA = (120, 220)   # cm
@@ -66,11 +66,11 @@ print(f"Filas antes: {filas_antes} | Filas después: {datos_limpios.shape[0]} | 
 
 
 # 7. Transformacion de datos
-print(datos_limpios["age"].dtype) # int64
+print("Tipo de dato en 'age':", datos_limpios["age"].dtype) # int64
 
 datos_limpios["age_number"] = (datos_limpios["age"]/365.25).astype(int) # 365.25 para compensar años bisiestos
-print(datos_limpios[["age","age_number"]].head())
-print("\nRango de edad en años:", datos_limpios["age_number"].min(), "-", datos_limpios["age_number"].max()) # Conocer rango de edad: 29 - 64
+print("Valores de edad en años:", datos_limpios[["age","age_number"]].head())
+print("Rango de edad en años:", datos_limpios["age_number"].min(), "-", datos_limpios["age_number"].max()) # Conocer rango de edad: 29 - 64
 
 # Agrupacion presion sistolica y diastlica
 print("Descripcion de presiones:", datos_limpios[["ap_hi","ap_lo"]].describe()) # Se detectaron outliers: min -150, max 16020
@@ -114,8 +114,8 @@ valores = [6, 5, 4, 3, 2, 1]
 datos_limpios["categoria_presion"] = np.select(condiciones, valores, default=np.nan) 
 # np.select toma la PRIMERA condición que se cumpla, por eso el orden de más grave a menos grave
 
-print(datos_limpios["categoria_presion"].value_counts(dropna=False))
-print(datos_limpios["cardio"].value_counts(dropna=False))
+print("Distribución de categorías de presión arterial:", datos_limpios["categoria_presion"].value_counts(dropna=False))
+print("Distribución de la variable 'cardio':", datos_limpios["cardio"].value_counts(dropna=False))
 
 
 
