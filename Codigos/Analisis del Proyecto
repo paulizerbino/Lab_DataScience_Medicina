@@ -260,3 +260,195 @@ for lado in ax.spines.values():
 plt.tight_layout()
 plt.show()
 
+
+# =====================================================================
+# 10. ¿QUÉ VARIABLES SE RELACIONAN CON LA ENFERMEDAD CARDIOVASCULAR?
+# =====================================================================
+# Pegar a continuación de la sección 9.
+# Idea: para cada variable miramos QUÉ PORCENTAJE de pacientes tiene ECV en
+# cada grupo. Si el porcentaje cambia mucho entre grupos, la variable sirve
+# para predecir. Si queda todo parecido, no sirve.
+#   - Naranja = más ECV que el promedio
+#   - Azul    = menos ECV que el promedio
+
+NARANJA, AZUL = "#D85A30", "#4C72B0"
+promedio = datos_limpios["cardio"].mean() * 100   # ~49,5%
+
+
+def grafico_porcentaje(columna, nombres, titulo, xlabel):
+    """Gráfico de barras: % de pacientes con ECV en cada grupo de 'columna'."""
+    porcentaje = datos_limpios.groupby(columna, observed=True)["cardio"].mean() * 100
+    porcentaje = porcentaje.reindex(list(nombres.keys()))
+    colores = [NARANJA if p > promedio else AZUL for p in porcentaje]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    barras = ax.bar(list(nombres.values()), porcentaje, color=colores)
+    ax.bar_label(barras, fmt="%.0f%%", padding=3, fontsize=11)
+    ax.axhline(promedio, color="gray", linestyle="--", linewidth=1,
+               label=f"Promedio de todos los pacientes ({promedio:.0f}%)")
+    ax.legend(loc="upper left", frameon=False)
+
+    ax.set(title=titulo, xlabel=xlabel, ylabel="% de pacientes con ECV", ylim=(0, 100))
+    for lado in ("top", "right"):
+        ax.spines[lado].set_visible(False)
+    plt.tight_layout()
+    plt.show()
+
+
+# ---------------------------------------------------------------------
+# 10.1 Presión arterial
+# ---------------------------------------------------------------------
+grafico_porcentaje(
+    "categoria_presion",
+    {1: "Hipotensión", 2: "Normal", 3: "Elevada", 4: "HTA 1", 5: "HTA 2", 6: "Crisis"},
+    "¿Cuánto más alta la presión, más enfermedad cardiovascular?",
+    "Categoría de presión arterial",
+)
+# Conclusión: SÍ. De 22% con presión normal a 78% con hipertensión nivel 2.
+# Es la variable que más separa a los enfermos de los sanos.
+
+
+# ---------------------------------------------------------------------
+# 10.2 Edad
+# ---------------------------------------------------------------------
+datos_limpios["grupo_edad"] = pd.cut(
+    datos_limpios["age_number"], bins=[0, 40, 45, 50, 55, 60, 120], right=False,
+    labels=["<40", "40-44", "45-49", "50-54", "55-59", "60+"]
+)
+grafico_porcentaje(
+    "grupo_edad",
+    {g: g for g in ["<40", "40-44", "45-49", "50-54", "55-59", "60+"]},
+    "¿Los pacientes mayores tienen más enfermedad cardiovascular?",
+    "Edad (años)",
+)
+# Conclusión: SÍ. Sube en cada grupo: de 24% (menores de 40) a 67% (60 o más).
+
+
+# ---------------------------------------------------------------------
+# 10.3 Colesterol
+# ---------------------------------------------------------------------
+grafico_porcentaje(
+    "cholesterol",
+    {1: "Normal", 2: "Alto", 3: "Muy alto"},
+    "¿El colesterol alto se asocia a más enfermedad cardiovascular?",
+    "Colesterol",
+)
+# Conclusión: SÍ. De 44% con colesterol normal a 76% con colesterol muy alto.
+
+
+# ---------------------------------------------------------------------
+# 10.4 Peso (IMC)
+# ---------------------------------------------------------------------
+grafico_porcentaje(
+    "categoria_imc",
+    {1: "Bajo peso", 2: "Normal", 3: "Sobrepeso", 4: "Obesidad I", 5: "Obesidad II", 6: "Obesidad III"},
+    "¿Las personas con más peso tienen más enfermedad cardiovascular?",
+    "Categoría de IMC",
+)
+# Conclusión: SÍ. De 40% con peso normal a casi 70% con obesidad II y III.
+
+
+# ---------------------------------------------------------------------
+# 10.5 ¿Qué pasa cuando se juntan varios factores de riesgo?
+# ---------------------------------------------------------------------
+# Contamos cuántos de estos 4 factores tiene cada paciente:
+#   presión alta (HTA 2 o más), colesterol alto, 55 años o más, obesidad
+datos_limpios["cantidad_factores"] = (
+    (datos_limpios["categoria_presion"] >= 5).astype(int)
+    + (datos_limpios["cholesterol"] >= 2).astype(int)
+    + (datos_limpios["age_number"] >= 55).astype(int)
+    + (datos_limpios["categoria_imc"] >= 4).astype(int)
+)
+grafico_porcentaje(
+    "cantidad_factores",
+    {0: "0", 1: "1", 2: "2", 3: "3", 4: "4"},
+    "¿Cuántos más factores de riesgo, más enfermedad cardiovascular?",
+    "Cantidad de factores de riesgo (presión alta, colesterol alto, 55+ años, obesidad)",
+)
+print(datos_limpios["cantidad_factores"].value_counts().sort_index())
+# Conclusión: el riesgo se acumula. Sin ningún factor, 21% tiene ECV;
+# con 2 factores, 68%; con los 4, 82%. Esto muestra que COMBINANDO variables se puede predecir
+# mucho mejor que con una sola -> es la idea del modelo predictivo.
+
+
+# =====================================================================
+# 11. CORRELACIÓN DE CADA VARIABLE CON EL % DE ENFERMOS
+# =====================================================================
+# Pegar a continuación de la sección 10.
+#
+# ¿Por qué el heatmap daba correlaciones bajas (0,24 para la edad)?
+# Porque 'cardio' solo vale 0 o 1. Dos pacientes de 60 años pueden ser uno
+# sano y otro enfermo, y eso "rompe" la correlación paciente por paciente.
+#
+# Acá hacemos otra cosa: agrupamos a los pacientes (por ejemplo, todos los de
+# 50 años juntos) y calculamos el % de enfermos de cada grupo. Después
+# correlacionamos la variable con ese %. Así se ve la tendencia real.
+
+NARANJA, AZUL = "#D85A30", "#4C72B0"
+
+
+def correlacion_por_grupo(ax, columna, ancho_grupo, nombre):
+    """Punto = un grupo de pacientes. Eje Y = % de ese grupo que tiene ECV."""
+    grupo = (datos_limpios[columna] // ancho_grupo) * ancho_grupo
+    tabla = datos_limpios.groupby(grupo)["cardio"].agg(["mean", "size"])
+    tabla = tabla[tabla["size"] >= 100]          # descartamos grupos con muy pocos pacientes
+    x, y = tabla.index.to_numpy(dtype=float), tabla["mean"].to_numpy() * 100
+
+    r_grupo = np.corrcoef(x, y)[0, 1]
+    r_individual = datos_limpios[columna].corr(datos_limpios["cardio"])
+
+    ax.scatter(x, y, s=tabla["size"] / 40, color=AZUL, alpha=0.7)   # punto más grande = más pacientes
+    pendiente, ordenada = np.polyfit(x, y, 1)
+    ax.plot(x, pendiente * x + ordenada, color=NARANJA, linewidth=2.5)
+
+    ax.text(0.05, 0.95, f"Correlación: {r_grupo:.2f}", transform=ax.transAxes,
+            fontsize=13, fontweight="bold", va="top")
+    ax.set(xlabel=nombre, ylabel="% de pacientes con ECV", ylim=(0, 100))
+    for lado in ("top", "right"):
+        ax.spines[lado].set_visible(False)
+    ax.grid(alpha=0.3)
+    return r_individual, r_grupo
+
+
+# ---------------------------------------------------------------------
+# 11.1 Edad, presión sistólica e IMC vs % de enfermos
+# ---------------------------------------------------------------------
+fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+resultados = {
+    "Edad":              correlacion_por_grupo(axes[0], "age_number", 1, "Edad (años)"),
+    "Presión sistólica": correlacion_por_grupo(axes[1], "ap_hi", 10, "Presión sistólica (mmHg)"),
+    "IMC":               correlacion_por_grupo(axes[2], "imc", 2, "IMC (kg/m²)"),
+}
+fig.suptitle("A medida que aumenta cada variable, aumenta el % de pacientes con ECV",
+             fontsize=14)
+plt.tight_layout()
+plt.show()
+# Cada punto es un grupo de pacientes (ej: todos los de 50 años).
+# Conclusión: las tres variables tienen una relación casi perfecta con el % de enfermos.
+# Por cada año de edad, por cada 10 mmHg de presión y por cada punto de IMC, sube el riesgo.
+# Detalle: en la presión la subida es más fuerte entre 120 y 140 y después se
+# estabiliza cerca del 85% (forma de "S"), por eso la recta no ajusta perfecto.
+
+
+# ---------------------------------------------------------------------
+# 11.2 Comparación: correlación paciente por paciente vs. por grupo
+# ---------------------------------------------------------------------
+comparacion = pd.DataFrame(resultados, index=["Paciente por paciente", "Por grupo"]).T
+print(comparacion.round(2))
+
+fig, ax = plt.subplots(figsize=(8, 5))
+comparacion.plot(kind="barh", color=["#B0B0B0", NARANJA], ax=ax, width=0.7)
+for contenedor in ax.containers:
+    ax.bar_label(contenedor, fmt="%.2f", padding=3)
+ax.set(title="La relación es mucho más fuerte de lo que mostraba el heatmap",
+       xlabel="Correlación", xlim=(0, 1.1))
+ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2, frameon=False)
+ax.invert_yaxis()
+for lado in ("top", "right"):
+    ax.spines[lado].set_visible(False)
+plt.tight_layout()
+plt.show()
+# Conclusión: el heatmap subestimaba la relación porque cardio es 0/1.
+# OJO al escribirlo en el informe: una correlación de 0,97 por grupo NO significa
+# que se pueda predecir con 97% de acierto a un paciente individual. Significa
+# que el RIESGO sube de forma muy clara y constante con cada variable.
