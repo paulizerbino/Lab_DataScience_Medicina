@@ -384,7 +384,7 @@ grafico_porcentaje(
 
 print(datos_limpios["cantidad_factores"].value_counts().sort_index())
 # El riesgo se acumula. Sin ningún factor, 21% tiene ECV; con 2 factores, 68%; con los 4, 82%. 
-# Esto muestra que combinando variables se puede predecir mucho mejor que con una sola variable.
+# La combinación de factores permite identificar grupos con mayor porcentaje de ECV.
 
 
 
@@ -444,7 +444,7 @@ fig, ax = plt.subplots(figsize=(8, 5))
 comparacion.plot(kind="barh", color=["#B0B0B0", NARANJA], ax=ax, width=0.7)
 for contenedor in ax.containers:
     ax.bar_label(contenedor, fmt="%.2f", padding=3)
-ax.set(title="La relación es mucho más fuerte de lo que mostraba el heatmap",
+ax.set(title="Comparación de correlaciones individuales y grupales",
        xlabel="Correlación", xlim=(0, 1.1))
 ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2, frameon=False)
 ax.invert_yaxis()
@@ -452,7 +452,7 @@ for lado in ("top", "right"):
     ax.spines[lado].set_visible(False)
 plt.tight_layout()
 plt.show()
-# La correlación por grupos muestra mejor la tendencia, pero un valor de 0,97 no implica un 97% de precisión para predecir ECV individualmente.
+# La correlación por grupos permite observar tendencias generales, pero no refleja la capacidad de predecir ECV en pacientes individuales.
 
 
 
