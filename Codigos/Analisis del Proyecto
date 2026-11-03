@@ -263,18 +263,11 @@ plt.tight_layout()
 plt.show()
 
 
-# =====================================================================
-# 10. ¿QUÉ VARIABLES SE RELACIONAN CON LA ENFERMEDAD CARDIOVASCULAR?
-# =====================================================================
-# Pegar a continuación de la sección 9.
-# Idea: para cada variable miramos QUÉ PORCENTAJE de pacientes tiene ECV en
-# cada grupo. Si el porcentaje cambia mucho entre grupos, la variable sirve
-# para predecir. Si queda todo parecido, no sirve.
-#   - Naranja = más ECV que el promedio
-#   - Azul    = menos ECV que el promedio
 
+
+# 10. Vemos para cada variable que porcentaje de pacientes tiene ECV en cada grupo
 NARANJA, AZUL = "#D85A30", "#4C72B0"
-promedio = datos_limpios["cardio"].mean() * 100   # ~49,5%
+promedio = datos_limpios["cardio"].mean() * 100   # ~49,5% de los pacientes tienen ECV
 
 
 def grafico_porcentaje(columna, nombres, titulo, xlabel):
@@ -297,22 +290,18 @@ def grafico_porcentaje(columna, nombres, titulo, xlabel):
     plt.show()
 
 
-# ---------------------------------------------------------------------
 # 10.1 Presión arterial
-# ---------------------------------------------------------------------
 grafico_porcentaje(
     "categoria_presion",
     {1: "Hipotensión", 2: "Normal", 3: "Elevada", 4: "HTA 1", 5: "HTA 2", 6: "Crisis"},
     "¿Cuánto más alta la presión, más enfermedad cardiovascular?",
     "Categoría de presión arterial",
 )
-# Conclusión: SÍ. De 22% con presión normal a 78% con hipertensión nivel 2.
-# Es la variable que más separa a los enfermos de los sanos.
+# De 22% con presión normal a 78% con hipertensión nivel 2.
 
 
-# ---------------------------------------------------------------------
+
 # 10.2 Edad
-# ---------------------------------------------------------------------
 datos_limpios["grupo_edad"] = pd.cut(
     datos_limpios["age_number"], bins=[0, 40, 45, 50, 55, 60, 120], right=False,
     labels=["<40", "40-44", "45-49", "50-54", "55-59", "60+"]
@@ -323,37 +312,31 @@ grafico_porcentaje(
     "¿Los pacientes mayores tienen más enfermedad cardiovascular?",
     "Edad (años)",
 )
-# Conclusión: SÍ. Sube en cada grupo: de 24% (menores de 40) a 67% (60 o más).
+# Sube en cada grupo: de 24% (menores de 40) a 67% (60 o más).
 
 
-# ---------------------------------------------------------------------
 # 10.3 Colesterol
-# ---------------------------------------------------------------------
 grafico_porcentaje(
     "cholesterol",
     {1: "Normal", 2: "Alto", 3: "Muy alto"},
     "¿El colesterol alto se asocia a más enfermedad cardiovascular?",
     "Colesterol",
 )
-# Conclusión: SÍ. De 44% con colesterol normal a 76% con colesterol muy alto.
+# De 44% con colesterol normal a 76% con colesterol muy alto.
 
 
-# ---------------------------------------------------------------------
 # 10.4 Peso (IMC)
-# ---------------------------------------------------------------------
 grafico_porcentaje(
     "categoria_imc",
     {1: "Bajo peso", 2: "Normal", 3: "Sobrepeso", 4: "Obesidad I", 5: "Obesidad II", 6: "Obesidad III"},
     "¿Las personas con más peso tienen más enfermedad cardiovascular?",
     "Categoría de IMC",
 )
-# Conclusión: SÍ. De 40% con peso normal a casi 70% con obesidad II y III.
+# De 40% con peso normal a casi 70% con obesidad II y III.
 
 
 
-# ---------------------------------------------------------------------
-# 10.5 Hábitos y género: fumar, alcohol, actividad física
-# ---------------------------------------------------------------------
+# 10.5 Hábitos y género: fumar, alcohol, actividad física y género
 habitos = pd.Series({
     "No fuma":    datos_limpios.loc[datos_limpios["smoke"] == 0, "cardio"].mean(),
     "Fuma":       datos_limpios.loc[datos_limpios["smoke"] == 1, "cardio"].mean(),
@@ -377,47 +360,38 @@ for lado in ("top", "right"):
     ax.spines[lado].set_visible(False)
 plt.tight_layout()
 plt.show()
-# Conclusión: CASI NADA. Todas las barras quedan entre 47% y 53%, pegadas al promedio.
+
+# Todas las barras quedan entre 47% y 53%, pegadas al promedio.
 # Fumar y tomar incluso dan un poco MENOS, lo que va contra la evidencia médica.
-# Posible explicación: son datos que declara el paciente (puede ocultarlos) y solo
-# dicen sí/no, no cuánto fuma o toma. Para predecir, estas variables aportan muy poco.
+# Son datos que declara el paciente (puede ocultarlos) y solo dicen sí/no, no cuánto fuma o toma. 
+# Para predecir, estas variables aportan muy poco.
 
 
-# ---------------------------------------------------------------------
 # 10.6 ¿Qué pasa cuando se juntan varios factores de riesgo?
-# ---------------------------------------------------------------------
-# Contamos cuántos de estos 4 factores tiene cada paciente:
-#   presión alta (HTA 2 o más), colesterol alto, 55 años o más, obesidad
 datos_limpios["cantidad_factores"] = (
-    (datos_limpios["categoria_presion"] >= 5).astype(int)
-    + (datos_limpios["cholesterol"] >= 2).astype(int)
-    + (datos_limpios["age_number"] >= 55).astype(int)
-    + (datos_limpios["categoria_imc"] >= 4).astype(int)
+    (datos_limpios["categoria_presion"] >= 5).astype(int)  # presión alta (HTA 2 o más)
+    + (datos_limpios["cholesterol"] >= 2).astype(int)  # colesterol alto (alto o muy alto)
+    + (datos_limpios["age_number"] >= 55).astype(int)  # 55 años o más
+    + (datos_limpios["categoria_imc"] >= 4).astype(int)  # obesidad
 )
+
 grafico_porcentaje(
     "cantidad_factores",
     {0: "0", 1: "1", 2: "2", 3: "3", 4: "4"},
     "¿Cuántos más factores de riesgo, más enfermedad cardiovascular?",
     "Cantidad de factores de riesgo (presión alta, colesterol alto, 55+ años, obesidad)",
 )
+
 print(datos_limpios["cantidad_factores"].value_counts().sort_index())
-# Conclusión: el riesgo se acumula. Sin ningún factor, 21% tiene ECV;
-# con 2 factores, 68%; con los 4, 82%. Esto muestra que COMBINANDO variables se puede predecir
-# mucho mejor que con una sola -> es la idea del modelo predictivo.
+# El riesgo se acumula. Sin ningún factor, 21% tiene ECV; con 2 factores, 68%; con los 4, 82%. 
+# Esto muestra que combinando variables se puede predecir mucho mejor que con una sola variable.
 
 
-# =====================================================================
-# 11. CORRELACIÓN DE CADA VARIABLE CON EL % DE ENFERMOS
-# =====================================================================
-# Pegar a continuación de la sección 10.
-#
-# ¿Por qué el heatmap daba correlaciones bajas (0,24 para la edad)?
-# Porque 'cardio' solo vale 0 o 1. Dos pacientes de 60 años pueden ser uno
-# sano y otro enfermo, y eso "rompe" la correlación paciente por paciente.
-#
-# Acá hacemos otra cosa: agrupamos a los pacientes (por ejemplo, todos los de
-# 50 años juntos) y calculamos el % de enfermos de cada grupo. Después
-# correlacionamos la variable con ese %. Así se ve la tendencia real.
+
+# 11. Correlacion de cada variable con los pacientes que padecen de alguna ECV
+# La variable "cardio" solo vale 0 o 1. Dos pacientes de 60 años pueden ser uno sano y otro enfermo, y eso "rompe" la correlación paciente por paciente.
+# Por eso agrupamos a los pacientes y calculamos el porcentaje de enfermos de cada grupo. 
+# Correlacionamos la variable con ese porcentaje, para ver la tendencia real.
 
 NARANJA, AZUL = "#D85A30", "#4C72B0"
 
@@ -445,9 +419,8 @@ def correlacion_por_grupo(ax, columna, ancho_grupo, nombre):
     return r_individual, r_grupo
 
 
-# ---------------------------------------------------------------------
+
 # 11.1 Edad, presión sistólica e IMC vs % de enfermos
-# ---------------------------------------------------------------------
 fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 resultados = {
     "Edad":              correlacion_por_grupo(axes[0], "age_number", 1, "Edad (años)"),
@@ -458,16 +431,12 @@ fig.suptitle("A medida que aumenta cada variable, aumenta el % de pacientes con 
              fontsize=14)
 plt.tight_layout()
 plt.show()
-# Cada punto es un grupo de pacientes (ej: todos los de 50 años).
-# Conclusión: las tres variables tienen una relación casi perfecta con el % de enfermos.
-# Por cada año de edad, por cada 10 mmHg de presión y por cada punto de IMC, sube el riesgo.
-# Detalle: en la presión la subida es más fuerte entre 120 y 140 y después se
-# estabiliza cerca del 85% (forma de "S"), por eso la recta no ajusta perfecto.
+# A mayor edad, presión e IMC, mayor porcentaje de pacientes con ECV. 
+# La relación es casi perfecta, aunque en la presión se estabiliza cerca del 85%.
 
 
-# ---------------------------------------------------------------------
+
 # 11.2 Comparación: correlación paciente por paciente vs. por grupo
-# ---------------------------------------------------------------------
 comparacion = pd.DataFrame(resultados, index=["Paciente por paciente", "Por grupo"]).T
 print(comparacion.round(2))
 
@@ -483,20 +452,11 @@ for lado in ("top", "right"):
     ax.spines[lado].set_visible(False)
 plt.tight_layout()
 plt.show()
-# Conclusión: el heatmap subestimaba la relación porque cardio es 0/1.
-# OJO al escribirlo en el informe: una correlación de 0,97 por grupo NO significa
-# que se pueda predecir con 97% de acierto a un paciente individual. Significa
-# que el RIESGO sube de forma muy clara y constante con cada variable.
+# La correlación por grupos muestra mejor la tendencia, pero un valor de 0,97 no implica un 97% de precisión para predecir ECV individualmente.
 
 
-# =====================================================================
-# 12. BOXPLOTS: ¿EN QUÉ SE DIFERENCIAN LOS SANOS DE LOS ENFERMOS?
-# =====================================================================
-# Pegar a continuación de la sección 11.
-# Cada caja muestra dónde está la mayoría de los pacientes de cada grupo:
-#   - la línea del medio es la mediana (el paciente "del medio")
-#   - la caja va del 25% al 75% de los pacientes
-# Si las cajas están a distinta altura, la variable separa sanos de enfermos.
+
+# 12. Boxplots: Vemos en que se diferencian los sanos de los enfermos
 
 NARANJA, AZUL = "#D85A30", "#4C72B0"
 sanos = datos_limpios[datos_limpios["cardio"] == 0]
@@ -532,24 +492,15 @@ fig.suptitle("Los pacientes con ECV tienen más presión, más edad y más peso"
 plt.tight_layout()
 plt.show()
 
-# Conclusiones:
-# - PRESIÓN: es la más clara. 3 de cada 4 sanos tienen 120 o menos, mientras que
-#   en los enfermos la caja arranca en 120 y llega a 140. Las cajas casi no se pisan.
-# - EDAD: los enfermos son unos 3 años mayores (55 vs 52). Las cajas se pisan bastante:
-#   la edad ayuda, pero sola no alcanza.
-# - IMC: los enfermos tienen más peso para su altura (27 vs 25, el límite del sobrepeso).
-#   Casi la mitad de los sanos tiene peso normal; 7 de cada 10 enfermos tiene sobrepeso u obesidad.
+# PRESIÓN: es la variable que mejor diferencia sanos y enfermos, con valores más altos en quienes tienen ECV.
+# EDAD: los enfermos son unos 3 años mayores (55 vs 52), aunque hay bastante superposición.
+# IMC: los enfermos tienen un IMC mayor (27 vs 25), y 7 de cada 10 presentan sobrepeso u obesidad.
 
 
 
-# =====================================================================
-# 13. DISTRIBUCIÓN DE SANOS VS ENFERMOS ("MONTAÑAS")
-# =====================================================================
-# Pegar a continuación de la sección 12. Usa scipy (ya instalado).
-# Cada montaña muestra cómo se reparten los pacientes de un grupo:
-# donde la montaña es más alta, ahí hay más pacientes.
-# Si la montaña naranja (enfermos) está corrida a la derecha, la variable
-# separa a los enfermos de los sanos.
+# 13. Graficos de densidad (KDE): sanos vs enfermos
+# Comparamos la distribución de presión, edad e IMC entre pacientes con y sin ECV
+# Los picos indícan donde se concentran los valores y las lineas punteadas muestran las medianas
 
 from scipy.stats import gaussian_kde
 
@@ -557,8 +508,6 @@ NARANJA, AZUL = "#D85A30", "#4C72B0"
 sanos = datos_limpios[datos_limpios["cardio"] == 0]
 enfermos = datos_limpios[datos_limpios["cardio"] == 1]
 
-# columna: (nombre, unidad, suavizado)
-# El suavizado es mayor en la presión porque casi todos los valores son redondos (110, 120, 130...)
 variables = {
     "ap_hi":      ("Presión sistólica", "mmHg", 0.35),
     "age_number": ("Edad", "años", 0.25),
@@ -599,28 +548,19 @@ fig.suptitle("¿En qué se diferencian los pacientes con y sin enfermedad cardio
 plt.tight_layout()
 plt.show()
 
-# Conclusiones:
-# - PRESIÓN: los sanos forman un pico muy marcado en 120; los enfermos se
-#   reparten mucho más hacia la derecha (130-160). Es la variable que mejor separa.
-# - EDAD: la montaña naranja está corrida hacia la derecha (más edad), pero se
-#   superpone mucho con la azul: la edad ayuda, pero sola no alcanza.
-# - IMC: los enfermos se corren hacia el sobrepeso (más de 25). La diferencia es
-#   menor que en la presión, pero clara.
+# PRESIÓN: es la variable que mejor diferencia ambos grupos; los enfermos presentan valores más altos (130-160).
+# EDAD: los enfermos tienden a ser mayores, aunque las distribuciones se superponen bastante.
+# IMC: los enfermos se concentran más en valores de sobrepeso (IMC > 25), pero la diferencia es menor.
 
 
 
-# =====================================================================
-# 14. MAPA DE RIESGO: EDAD + PRESIÓN COMBINADAS
-# =====================================================================
-# Pegar a continuación de la sección 13.
-# Cada casillero es un grupo de pacientes con cierta edad Y cierta presión.
-# El número es el % de ese grupo que tiene ECV. Más rojo = más riesgo.
-# Así se ve cómo se COMBINAN dos factores, algo que un gráfico de una sola
-# variable no muestra.
+# 14. Mapa de riesgo: edad y presion arterial
+# Combinamos grupos de edad y categorias de precsion para calcular el porcentaje de pacientes con ECV
+# Excluimos los grupos con menos de 30 pacientes para que el mapa sea más confiable
 
 from matplotlib.colors import LinearSegmentedColormap
 
-# Grupos de edad (por si no se creó antes en la sección 10)
+
 datos_limpios["grupo_edad"] = pd.cut(
     datos_limpios["age_number"], bins=[0, 40, 45, 50, 55, 60, 120], right=False,
     labels=["<40", "40-44", "45-49", "50-54", "55-59", "60+"]
@@ -663,14 +603,6 @@ barra.set_label("% de pacientes con ECV", fontsize=11)
 plt.tight_layout()
 plt.show()
 
-# Conclusiones:
-# - El riesgo crece hacia la esquina de arriba a la derecha (más edad + más presión).
-# - La presión pesa más que la edad: un joven con HTA 2 tiene más riesgo que un
-#   mayor de 60 con presión normal.
-# - Los dos factores se suman: con presión normal y menos de 40 años el riesgo es
-#   bajísimo (8%); con HTA 2 y más de 60 años, la gran mayoría está enferma (81%).
-# - Dato interesante: con presión normal, la edad cambia muchísimo el riesgo
-#   (8% -> 44%). Pero con HTA 2 o más, el riesgo ya es alto a cualquier edad
-#   (71% -> 81%): la presión alta "domina" sobre la edad.
-
-
+# EDAD Y PRESIÓN: el porcentaje de ECV aumenta cuando ambas variables son mayores.
+# PRESIÓN: parece tener una relación más fuerte con la ECV que la edad.
+# COMBINACIÓN: con presión normal y menos de 40 años, el 8% tiene ECV, mientras que con HTA 2 y 60 años o más, el porcentaje alcanza el 81%.
