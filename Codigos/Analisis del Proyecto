@@ -606,3 +606,145 @@ plt.show()
 # EDAD Y PRESIÓN: el porcentaje de ECV aumenta cuando ambas variables son mayores.
 # PRESIÓN: parece tener una relación más fuerte con la ECV que la edad.
 # COMBINACIÓN: con presión normal y menos de 40 años, el 8% tiene ECV, mientras que con HTA 2 y 60 años o más, el porcentaje alcanza el 81%.
+
+
+
+# ----------------------------------------------------------
+# Crear modelo: todos los pacientes: ¿Lo puedo operar hoy? |
+# ----------------------------------------------------------
+import statsmodels.api as sm
+
+datos_limpios["presion_alta"] = (datos_limpios["categoria_presion"] >= 5).astype(int) 
+datos_limpios["sexo"] = (datos_limpios["gender"] == 2).astype(int)  # 0 = mujer, 1 = hombre
+
+variables_x = ["age_number", "sexo", "imc", "cholesterol", "gluc", "smoke", "alco"]
+X = sm.add_constant(datos_limpios[variables_x])
+y = datos_limpios["presion_alta"]
+
+modelo = sm.Logit(y, X).fit()
+datos_limpios["prob_presion_alta"] = modelo.predict(X)
+print(modelo.summary())
+
+# tabla final modelo todos los pacientes
+tabla_final_pacientes = datos_limpios[["id", "presion_alta", "prob_presion_alta"]]
+print(tabla_final_pacientes.head())
+
+
+
+# --------------------------------------------------------
+# Crear modelo: pacientes con ECV: ¿Lo puedo operar hoy? |
+# --------------------------------------------------------
+datos_ecv = datos_limpios[datos_limpios["cardio"] == 1].copy()
+
+X_ecv = sm.add_constant(datos_ecv[variables_x])
+y_ecv = datos_ecv["presion_alta"]
+
+modelo_ecv = sm.Logit(y_ecv, X_ecv).fit()
+datos_ecv["prob_presion_alta"] = modelo_ecv.predict(X_ecv)
+print(modelo_ecv.summary())
+
+# tabla final modelo pacientes con ECV
+tabla_final_ecv = datos_ecv[["id", "presion_alta", "prob_presion_alta"]]
+print(tabla_final_ecv.head())
+
+
+
+# ----------------------------------
+# Comparación entre los dos modelos|
+# ----------------------------------
+from sklearn.metrics import roc_auc_score
+
+auc_total = roc_auc_score(y, datos_limpios["prob_presion_alta"])
+auc_ecv = roc_auc_score(y_ecv, datos_ecv["prob_presion_alta"])
+print(f"Todos: n={len(datos_limpios)} | pseudo R²={modelo.prsquared:.4f} | AUC={auc_total:.3f}")
+print(f"Con ECV: n={len(datos_ecv)} | pseudo R²={modelo_ecv.prsquared:.4f} | AUC={auc_ecv:.3f}")
+
+
+
+# ----------------------------------
+# Crear modelo cardio: ¿Tiene ECV? |
+# ----------------------------------
+variables_cardio_x = ["age_number", "sexo", "imc", "cholesterol", "gluc", "smoke", "alco", "ap_hi", "ap_lo"]
+
+X_cardio = sm.add_constant(datos_limpios[variables_cardio_x])
+y_cardio = datos_limpios["cardio"]
+
+modelo_cardio = sm.Logit(y_cardio, X_cardio).fit()
+datos_limpios["prob_cardio"] = modelo_cardio.predict(X_cardio)
+print(modelo_cardio.summary())
+
+# tabla final modelo pacientes
+tabla_final_cardio = datos_limpios[["id", "cardio", "prob_cardio"]]
+print(tabla_final_cardio.head())
+
+print(f"AUC cardio: {roc_auc_score(y_cardio, datos_limpios['prob_cardio']):.3f}")
+
+
+
+# -----------------------------------------------
+# Evaluación modelo cardio: matriz de confusión |
+# -----------------------------------------------
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, classification_report
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_cardio, datos_limpios["cardio"], test_size=0.3, random_state=42)
+
+m = sm.Logit(y_train, X_train).fit()
+pred_test = (m.predict(X_test) >= 0.4).astype(int)
+
+matriz = confusion_matrix(y_test, pred_test)
+print(matriz)  # [[VN, FP], [FN, VP]]
+
+vn, fp, fn, vp = matriz.ravel()
+print(f"Falsos positivos: {fp} | Falsos negativos: {fn}")
+print(classification_report(y_test, pred_test, target_names=["Sin ECV", "Con ECV"]))
+print(f"AUC test: {roc_auc_score(y_test, m.predict(X_test)):.3f}")
+
+
+## Graficos sobre modelo cardio
+# Gráfico 1: distribución de la población
+datos_limpios["nivel_riesgo"] = pd.cut(
+    datos_limpios["prob_cardio"], bins=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
+    labels=["Muy bajo", "Bajo", "Medio", "Alto", "Muy alto"], include_lowest=True)
+
+resumen = datos_limpios.groupby("nivel_riesgo", observed=True)["cardio"].agg(["size", "mean"])
+resumen["pct_poblacion"] = resumen["size"] / resumen["size"].sum() * 100
+print(resumen)
+
+fig, ax = plt.subplots(figsize=(8, 5))
+barras = ax.bar(resumen.index.astype(str), resumen["pct_poblacion"], color=AZUL)
+ax.bar_label(barras, fmt="%.0f%%", padding=3, fontsize=11)
+ax.set(title="¿Cómo se distribuye la población según su nivel de riesgo?",
+       xlabel="Nivel de riesgo (probabilidad del modelo)", ylabel="% de pacientes")
+for lado in ("top", "right"):
+    ax.spines[lado].set_visible(False)
+plt.tight_layout()
+plt.show()
+
+# Gráfico 2: mapa de riesgo por edad
+tabla = (datos_limpios.groupby(["nivel_riesgo", "grupo_edad"], observed=True)["cardio"]
+         .agg(["mean", "size"]))
+porcentaje = (tabla["mean"] * 100).unstack("grupo_edad")
+cantidad = tabla["size"].unstack("grupo_edad")
+porcentaje = porcentaje.where(cantidad >= 30).iloc[::-1]   # riesgo más alto arriba
+
+fig, ax = plt.subplots(figsize=(11, 6))
+imagen = ax.imshow(porcentaje, cmap=colores, vmin=0, vmax=100, aspect="auto")  # 'colores' ya existe en tu script
+for fila in range(porcentaje.shape[0]):
+    for col in range(porcentaje.shape[1]):
+        valor = porcentaje.iloc[fila, col]
+        if pd.notna(valor):
+            ax.text(col, fila, f"{valor:.0f}%", ha="center", va="center", fontsize=14,
+                    fontweight="bold", color="white" if valor < 15 or valor > 65 else "black")
+ax.set_xticks(range(porcentaje.shape[1]), porcentaje.columns, fontsize=12)
+ax.set_yticks(range(porcentaje.shape[0]), porcentaje.index, fontsize=12)
+ax.set_xlabel("Edad (años)", fontsize=12)
+ax.set_ylabel("Nivel de riesgo del modelo", fontsize=12)
+ax.set_title("Mapa de riesgo: % de pacientes con ECV según edad y nivel de riesgo",
+             fontsize=15, fontweight="bold", pad=15)
+for lado in ax.spines.values():
+    lado.set_visible(False)
+fig.colorbar(imagen, ax=ax, shrink=0.8).set_label("% de pacientes con ECV")
+plt.tight_layout()
+plt.show()
